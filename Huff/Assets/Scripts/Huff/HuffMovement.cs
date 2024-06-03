@@ -19,18 +19,25 @@ public class HuffMovement : MonoBehaviour
 
     private float voltageTimer = 0;
 
-    [SerializeField] private float groundSpeed;
-
+    // Jumping variables
+    private bool jumpPressed = false;
+    private bool isJumping = false;
     [SerializeField] private float jumpForce;
     [SerializeField] private float maxHoldTime;
     [SerializeField] private float jumpHeldForce;
-    [SerializeField] private float jumpHeldTimer;
+    private float jumpHeldTimer;
 
-
+    // the direction huff is facing
     Boolean facingRight = true;
-    Boolean runningLeft = false, runningRight = false;
 
-    Vector2 horizontalInput;
+    // running variables
+    [SerializeField] private float groundSpeed;
+    Boolean holdingLeft = false, holdingRight = false;
+
+    // airdrifting variables
+    [SerializeField] private float airStrafeFactor;
+    [SerializeField] private float maxAirStrafeSpeed;
+    
 
     private HuffControls controls;
 
@@ -60,13 +67,14 @@ public class HuffMovement : MonoBehaviour
         // initialize the controls adapter
         controls = new HuffControls();
 
-        controls.Huff.Left.performed += ctx => runningLeft = true;
-        controls.Huff.Left.canceled += ctx => runningLeft = false;
+        controls.Huff.Left.performed += ctx => holdingLeft = true;
+        controls.Huff.Left.canceled += ctx => holdingLeft = false;
 
-        controls.Huff.Right.performed += ctx => runningRight = true;
-        controls.Huff.Right.canceled += ctx => runningRight = false;
+        controls.Huff.Right.performed += ctx => holdingRight = true;
+        controls.Huff.Right.canceled += ctx => holdingRight = false;
 
-        controls.Huff.Jump.performed += jump;
+        controls.Huff.Jump.performed += ctx => jumpPressed = true;
+        controls.Huff.Jump.canceled += ctx => jumpPressed = false;
 
         controls.Huff.Up.performed += up;
         controls.Huff.Down.performed += down;
@@ -80,24 +88,50 @@ public class HuffMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (onGround())
+        Debug.Log(holdingLeft + ", " + holdingRight);
+
+        if (onGround()) // if player is on the ground
         {
             animator.SetBool("MidAir", false);
             
-            if (runningLeft && !runningRight)
+            if (holdingLeft && !holdingRight) // run left
                 runLeft();
-            else if (runningRight)
+            else if (holdingRight) // run right (or both)
                 runRight();
-            else
+            else // not running
                 animator.SetBool("Running", false);
+
+            if (jumpPressed) // initalizing ground jump
+            {
+                isJumping = true;
+                jumpHeldTimer = 0;
+                groundJump(jumpForce);
+            }
         }
         else
         {
+            
+               
+
+            if (jumpPressed && isJumping && jumpHeldTimer < maxHoldTime)
+            {
+                body.velocity = new Vector2(body.velocity.x, body.velocity.y + jumpHeldForce * Time.deltaTime);
+                jumpHeldTimer += Time.deltaTime;
+            }
+
             if (true) // !!! change this based on  if other mid air states are being performed
             {
                 animator.SetBool("MidAir", true);
+
+                if (holdingLeft && !holdingRight)
+                    airStrafe(-1);
+                else if (holdingRight)
+                    airStrafe(1);
             }
         }
+
+        if (jumpPressed && jumpHeldTimer >= maxHoldTime)
+            isJumping = false;
 
 
     }
@@ -129,6 +163,12 @@ public class HuffMovement : MonoBehaviour
         body.velocity = new Vector2(groundSpeed, body.velocity.y);
     }
 
+    void airStrafe(int direction)
+    {
+        body.velocity = new Vector2(Mathf.Clamp(body.velocity.x + direction * airStrafeFactor * Time.deltaTime, -maxAirStrafeSpeed, maxAirStrafeSpeed), body.velocity.y);
+    }
+
+
     // for testing, pressing up makes Huff take 1 hp of damage
     void up(InputAction.CallbackContext context)
     {
@@ -144,7 +184,7 @@ public class HuffMovement : MonoBehaviour
 
     void turnAround()
     {
-        if (facingRight && runningLeft || !facingRight && runningRight)
+        if (facingRight && holdingLeft || !facingRight && holdingRight)
         {
             facingRight = !facingRight;
             transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, 1);
@@ -165,27 +205,32 @@ public class HuffMovement : MonoBehaviour
 
     // Jumping
 
-    void jump(InputAction.CallbackContext context)
-    {
-        if (onGround()) // grounded jump
-            groundJump();
-        else
-        {
-            if (hasVoltage()) // thunder strike
-            {
+    //void jump()
+    //{
+    //    if (onGround()) // grounded jump
+    //        groundJump();
+    //    else
+    //    {
+    //        if (hasVoltage()) // thunder strike
+    //        {
 
-            }
-            else // tornado jump
-            {
+    //        }
+    //        else // tornado jump
+    //        {
 
-            }
-        }
-    }
+    //        }
+    //    }
+    //}
 
-    void groundJump()
+    void groundJump(float jumpingForce)
     {
         animator.SetBool("MidAir", true);
         body.velocity = new Vector2(body.velocity.x, jumpForce);
+    }
+
+    void jumpHeld(float jumpingForce)
+    {
+
     }
 
 
