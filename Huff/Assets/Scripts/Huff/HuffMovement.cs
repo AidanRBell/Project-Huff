@@ -1,5 +1,5 @@
 /**
- * 
+ * Tornado jump sometimes activates even when not already having starting jumped
  */
 
 using System;
@@ -19,25 +19,39 @@ public class HuffMovement : MonoBehaviour
 
     private float voltageTimer = 0;
 
+    // the direction huff is facing
+    bool facingRight = true;
+
+    // running variables
+    [SerializeField] private float groundSpeed;
+    private bool holdingLeft = false, holdingRight = false, holdingUp = false, holdingDown = false;
+    private bool holdingJump = false, holdingShoot = false, holdingCharge = false, holdingGrip = false, holdingPath = false, holdingInteract = false;
+
+    // airdrifting variables
+    [SerializeField] private float airStrafeFactor;
+    [SerializeField] private float maxAirStrafeSpeed;
+
     // Jumping variables
-    private bool jumpPressed = false;
     private bool isJumping = false;
     [SerializeField] private float jumpForce;
     [SerializeField] private float maxHoldTime;
     [SerializeField] private float jumpHeldForce;
     private float jumpHeldTimer;
 
-    // the direction huff is facing
-    Boolean facingRight = true;
+    // tornado jump
+    private bool canTornadoJump = false;
+    private bool tornadoJumping = false;
+    [SerializeField] private float tornadoJumpingFactor;
+    const float TORNADO_JUMP_MAX_TIME = 2.0f;
+    private float tornadoJumpTimer;
 
-    // running variables
-    [SerializeField] private float groundSpeed;
-    Boolean holdingLeft = false, holdingRight = false;
+    // sliding variables
+    private bool isSliding = false, keepSliding = false;
+    [SerializeField] private float slideFactor;
+    public Transform slideAttackPoint;
+    public float slideAttackRadius = 0.5f;
 
-    // airdrifting variables
-    [SerializeField] private float airStrafeFactor;
-    [SerializeField] private float maxAirStrafeSpeed;
-    
+
 
     private HuffControls controls;
 
@@ -45,7 +59,8 @@ public class HuffMovement : MonoBehaviour
     private CircleCollider2D legsCrclCollider;
     private Animator animator;
 
-    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private LayerMask groundLayer, enemyLayer, hazardLayer, breakableLayer;
+
 
     public Vector2 boxSize;
     public float castDistance;
@@ -73,27 +88,43 @@ public class HuffMovement : MonoBehaviour
         controls.Huff.Right.performed += ctx => holdingRight = true;
         controls.Huff.Right.canceled += ctx => holdingRight = false;
 
-        controls.Huff.Jump.performed += ctx => jumpPressed = true;
-        controls.Huff.Jump.canceled += ctx => jumpPressed = false;
+        controls.Huff.Up.performed += ctx => holdingUp = true;
+        controls.Huff.Up.canceled += ctx => holdingUp = false;
 
-        controls.Huff.Up.performed += up;
-        controls.Huff.Down.performed += down;
-        controls.Huff.Shoot.performed += zipShot;
-        controls.Huff.Charge.performed += superCharge;
-        controls.Huff.Grip.performed += electricGrip;
-        controls.Huff.Path.performed += pulsePath;
-        controls.Huff.Interact.performed += interact;
+        controls.Huff.Down.performed += ctx => holdingDown = true;
+        controls.Huff.Down.canceled += ctx => holdingDown = false;
+
+        controls.Huff.Jump.performed += ctx => holdingJump = true;
+        controls.Huff.Jump.canceled += ctx => holdingJump = false;
+
+        controls.Huff.Shoot.performed += ctx => holdingShoot = true;
+        controls.Huff.Shoot.canceled += ctx => holdingShoot = false;
+
+        controls.Huff.Charge.performed += ctx => holdingCharge = true;
+        controls.Huff.Charge.canceled += ctx => holdingCharge = false;
+
+        controls.Huff.Grip.performed += ctx => holdingGrip = true;
+        controls.Huff.Grip.canceled += ctx => holdingGrip = false;
+
+        controls.Huff.Path.performed += ctx => holdingPath = true;
+        controls.Huff.Path.canceled += ctx => holdingPath = false;
+
+        controls.Huff.Interact.performed += ctx => holdingInteract = true;
+        controls.Huff.Interact.canceled += ctx => holdingInteract = false;
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(holdingLeft + ", " + holdingRight);
-
         if (onGround()) // if player is on the ground
         {
+            canTornadoJump = false;
+            tornadoJumping = false;
             animator.SetBool("MidAir", false);
-            
+            animator.SetBool("TornadoJumping", false);
+            tornadoJumpTimer = TORNADO_JUMP_MAX_TIME;
+
             if (holdingLeft && !holdingRight) // run left
                 runLeft();
             else if (holdingRight) // run right (or both)
@@ -101,38 +132,72 @@ public class HuffMovement : MonoBehaviour
             else // not running
                 animator.SetBool("Running", false);
 
-            if (jumpPressed) // initalizing ground jump
+            if (holdingJump) // initalizing ground jump
             {
                 isJumping = true;
                 jumpHeldTimer = 0;
                 groundJump(jumpForce);
             }
-        }
-        else
-        {
-            
-               
 
-            if (jumpPressed && isJumping && jumpHeldTimer < maxHoldTime)
+            if (!hasVoltage() && holdingCharge && !isSliding && keepSliding) { 
+                isSliding = true;
+                animator.SetBool("Sliding", true);
+                slide();
+            }
+            else if (!hasVoltage() && holdingCharge && isSliding && keepSliding) {
+                slide();
+            }
+            else
+            {
+                isSliding = false;
+                animator.SetBool("Sliding", false);
+            }
+
+
+
+        }
+        else // if player is in mid air
+        {
+            animator.SetBool("Running", false);
+            animator.SetBool("Sliding", false);
+            isSliding = false;
+            animator.SetBool("MidAir", true);
+
+            // holding jump
+            if (holdingJump && isJumping && jumpHeldTimer < maxHoldTime)
             {
                 body.velocity = new Vector2(body.velocity.x, body.velocity.y + jumpHeldForce * Time.deltaTime);
                 jumpHeldTimer += Time.deltaTime;
             }
 
-            if (true) // !!! change this based on  if other mid air states are being performed
-            {
-                animator.SetBool("MidAir", true);
+            if (holdingLeft && !holdingRight)
+                airStrafe(-1);
+            else if (holdingRight)
+                airStrafe(1);
 
-                if (holdingLeft && !holdingRight)
-                    airStrafe(-1);
-                else if (holdingRight)
-                    airStrafe(1);
+            // base form and in mid air
+            if (!hasVoltage())
+            {
+                if (holdingJump && canTornadoJump) { // just staring to tornado jump
+                    tornadoJump();
+                }
             }
+
+            if (isJumping && !holdingJump && !tornadoJumping && tornadoJumpTimer > 0)
+            {
+                isJumping = false;
+                canTornadoJump = true;
+            }
+
+            
         }
 
-        if (jumpPressed && jumpHeldTimer >= maxHoldTime)
+        if (holdingJump && jumpHeldTimer >= maxHoldTime)
             isJumping = false;
 
+
+        if (!holdingCharge)
+            keepSliding = true;
 
     }
 
@@ -198,40 +263,79 @@ public class HuffMovement : MonoBehaviour
         return Physics2D.BoxCast(transform.position, boxSize, 0, -transform.up, castDistance, groundLayer);
     }
 
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.layer == groundLayer)
+        {
+            Debug.Log("hittingGround");
+            animator.SetBool("MidAir", false);
+            animator.SetBool("TornadoJumping", false);
+        }
+    }
+
+
+
     //private void OnDrawGizmos()
     //{
     //    Gizmos.DrawWireCube(transform.position - transform.up * castDistance, boxSize);
     //}
 
-    // Jumping
-
-    //void jump()
-    //{
-    //    if (onGround()) // grounded jump
-    //        groundJump();
-    //    else
-    //    {
-    //        if (hasVoltage()) // thunder strike
-    //        {
-
-    //        }
-    //        else // tornado jump
-    //        {
-
-    //        }
-    //    }
-    //}
 
     void groundJump(float jumpingForce)
     {
         animator.SetBool("MidAir", true);
+        animator.SetBool("TornadoJumping", false);
+
         body.velocity = new Vector2(body.velocity.x, jumpForce);
     }
 
-    void jumpHeld(float jumpingForce)
+    void tornadoJump()
     {
+        if (!tornadoJumping)
+        {
+            tornadoJumping = true;
+            animator.SetBool("TornadoJumping", true);
+        }
+        if (tornadoJumpTimer > 0)
+        {
+            
+            tornadoJumpTimer -= Time.deltaTime;
+            body.velocity = new Vector2(body.velocity.x, tornadoJumpingFactor);
+        }
+        else
+            canTornadoJump = false;
 
     }
+
+    void slide()
+    {
+        keepSliding = true;
+        int dir = 0;
+        if (facingRight)
+            dir = 1;
+        else
+            dir = -1;
+        body.velocity = new Vector2(dir * slideFactor, body.velocity.y);
+
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(slideAttackPoint.position, slideAttackRadius, enemyLayer);
+        Collider2D[] hitBreakables = Physics2D.OverlapCircleAll(slideAttackPoint.position, slideAttackRadius, breakableLayer);
+
+        foreach (Collider2D enemy in hitEnemies)
+        {
+            Debug.Log("We hit " + enemy.name);
+        }
+    }
+
+    public void stopSliding()
+    {
+        keepSliding = false;
+        isSliding = false;
+    }
+
+    //private void OnDrawGizmosSelected()
+    //{
+    //    Gizmos.DrawWireSphere(slideAttackPoint.position, slideAttackRadius);
+    //}
 
 
     // voltage moves

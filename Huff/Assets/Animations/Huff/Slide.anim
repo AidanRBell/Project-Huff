@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TornadoJump
+  m_Name: Slide
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -21,13 +21,15 @@ AnimationClip:
   - serializedVersion: 2
     curve:
     - time: 0
-      value: {fileID: 21300000, guid: e0ef6702311fb4545887957c98b382e2, type: 3}
-    - time: 0.11666667
-      value: {fileID: 21300000, guid: 09aa15fff28966f439556ee22cc67ce9, type: 3}
-    - time: 0.21666667
-      value: {fileID: 21300000, guid: 1e08d03a03be45540a530528fd9d7d7c, type: 3}
-    - time: 0.33333334
-      value: {fileID: 21300000, guid: e0ef6702311fb4545887957c98b382e2, type: 3}
+      value: {fileID: 21300000, guid: 7b18dd8adba5fd74b832766c13eef0e8, type: 3}
+    - time: 0.36666667
+      value: {fileID: 21300000, guid: 9cb86d5158d84b8499236569f3497f77, type: 3}
+    - time: 0.46666667
+      value: {fileID: 21300000, guid: b5bd9f4b2cbc3734587e5b91bf580cdd, type: 3}
+    - time: 0.56666666
+      value: {fileID: 21300000, guid: cef9fe8370e995c47bda1e0d511614e0, type: 3}
+    - time: 0.75
+      value: {fileID: 21300000, guid: cef9fe8370e995c47bda1e0d511614e0, type: 3}
     attribute: m_Sprite
     path: 
     classID: 212
@@ -50,16 +52,17 @@ AnimationClip:
       isIntCurve: 0
       isSerializeReferenceCurve: 0
     pptrCurveMapping:
-    - {fileID: 21300000, guid: e0ef6702311fb4545887957c98b382e2, type: 3}
-    - {fileID: 21300000, guid: 09aa15fff28966f439556ee22cc67ce9, type: 3}
-    - {fileID: 21300000, guid: 1e08d03a03be45540a530528fd9d7d7c, type: 3}
-    - {fileID: 21300000, guid: e0ef6702311fb4545887957c98b382e2, type: 3}
+    - {fileID: 21300000, guid: 7b18dd8adba5fd74b832766c13eef0e8, type: 3}
+    - {fileID: 21300000, guid: 9cb86d5158d84b8499236569f3497f77, type: 3}
+    - {fileID: 21300000, guid: b5bd9f4b2cbc3734587e5b91bf580cdd, type: 3}
+    - {fileID: 21300000, guid: cef9fe8370e995c47bda1e0d511614e0, type: 3}
+    - {fileID: 21300000, guid: cef9fe8370e995c47bda1e0d511614e0, type: 3}
   m_AnimationClipSettings:
     serializedVersion: 2
     m_AdditiveReferencePoseClip: {fileID: 0}
     m_AdditiveReferencePoseTime: 0
     m_StartTime: 0
-    m_StopTime: 0.35000002
+    m_StopTime: 0.76666665
     m_OrientationOffsetY: 0
     m_Level: 0
     m_CycleOffset: 0
@@ -78,4 +81,11 @@ AnimationClip:
   m_EulerEditorCurves: []
   m_HasGenericRootTransform: 0
   m_HasMotionFloatCurves: 0
-  m_Events: []
+  m_Events:
+  - time: 0.75
+    functionName: stopSliding
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
