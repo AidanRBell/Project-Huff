@@ -323,6 +323,7 @@ public class HuffMovement : MonoBehaviour
         foreach (Collider2D enemy in hitEnemies)
         {
             Debug.Log("We hit " + enemy.name);
+            enemy.GetComponent<EnemyHealth>().takeDamage(1);
         }
     }
 
