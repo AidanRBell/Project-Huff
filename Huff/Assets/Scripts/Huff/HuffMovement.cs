@@ -42,7 +42,7 @@ public class HuffMovement : MonoBehaviour
     private bool canTornadoJump = false;
     private bool tornadoJumping = false;
     [SerializeField] private float tornadoJumpingFactor;
-    const float TORNADO_JUMP_MAX_TIME = 2.0f;
+    const float TORNADO_JUMP_MAX_TIME = 1.5f;
     private float tornadoJumpTimer;
 
     // sliding variables
@@ -267,7 +267,6 @@ public class HuffMovement : MonoBehaviour
     {
         if (collision.gameObject.layer == groundLayer)
         {
-            Debug.Log("hittingGround");
             animator.SetBool("MidAir", false);
             animator.SetBool("TornadoJumping", false);
         }
