@@ -34,6 +34,7 @@ public class HuffMovement : MonoBehaviour
     // Jumping variables
     private bool isJumping = false;
     [SerializeField] private float jumpForce;
+    [SerializeField] private float jumpDragFactor;
     [SerializeField] private float maxHoldTime;
     [SerializeField] private float jumpHeldForce;
     private float jumpHeldTimer;
@@ -285,7 +286,7 @@ public class HuffMovement : MonoBehaviour
         animator.SetBool("MidAir", true);
         animator.SetBool("TornadoJumping", false);
 
-        body.velocity = new Vector2(body.velocity.x, jumpForce);
+        body.velocity = new Vector2(body.velocity.x / jumpDragFactor, jumpForce);
     }
 
     void tornadoJump()
@@ -391,10 +392,22 @@ public class HuffMovement : MonoBehaviour
         return 0;
     }
 
+    public void respawn(float x, float y)
+    {
+        body.velocity = Vector3.zero;
+        transform.position = new Vector3(x,y,0);
+    }
+
+
+    // Voltage
+
     public bool hasVoltage()
     {
         return voltageTimer > 0;
     }
+
+
+    // Other
 
     public void setAnimationBool(string name, bool value)
     {

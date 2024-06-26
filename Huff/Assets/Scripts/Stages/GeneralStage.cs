@@ -7,11 +7,13 @@ public class GeneralStage : MonoBehaviour
 {
 
     [SerializeField] GameObject huffObject;
-    HuffMovement huffScript;
 
     int huffCurrentHealth;
 
     [SerializeField] GameObject[] huffHealthUIs;
+    [SerializeField] Transform[] respawnPoints;
+
+    private Vector2 currRespawnPos;
     
 
 
@@ -20,18 +22,17 @@ public class GeneralStage : MonoBehaviour
     void Start()
     {
         
-        huffScript = huffObject.GetComponent<HuffMovement>();
-        huffCurrentHealth = huffScript.getHealth();
+        huffCurrentHealth = huffObject.GetComponent<HuffMovement>().getHealth();
         setHuffHealthUI(huffCurrentHealth);
-        
+        currRespawnPos = new Vector2(respawnPoints[0].position.x, respawnPoints[0].position.y);
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (huffScript.getHealth() != huffCurrentHealth)
+        if (huffObject.GetComponent<HuffMovement>().getHealth() != huffCurrentHealth)
         {
-            huffCurrentHealth = huffScript.getHealth();
+            huffCurrentHealth = huffObject.GetComponent<HuffMovement>().getHealth();
             setHuffHealthUI(huffCurrentHealth);
         }
     }
@@ -48,6 +49,11 @@ public class GeneralStage : MonoBehaviour
                 huffHealthUIs[i].SetActive(false);
 
         }
+    }
+
+    public void huffHitDeathPit()
+    {
+        huffObject.GetComponent<HuffMovement>().respawn(currRespawnPos.x, currRespawnPos.y);
     }
 
 
