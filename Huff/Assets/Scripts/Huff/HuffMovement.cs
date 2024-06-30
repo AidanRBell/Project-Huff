@@ -1,5 +1,6 @@
 /**
- * Tornado jump sometimes activates even when not already having starting jumped
+ * We could maybe have it so that we have an extra second of invisibility
+ * Have it so we can jump off enemies
  */
 
 using System;
@@ -14,6 +15,9 @@ using UnityEngine.InputSystem;
 
 public class HuffMovement : MonoBehaviour
 {
+    [SerializeField] private GameObject level;
+
+
     const int IDLE = 0, MIDAIR = 1, RUNNING = 2, JUMPING = 3, TORNADO_JUMP = 4;
     private int currAction;
 
@@ -52,7 +56,8 @@ public class HuffMovement : MonoBehaviour
     public Transform slideAttackPoint;
     public float slideAttackRadius = 0.5f;
 
-
+    // hit variables
+    private bool inHitStun = false;
 
     private HuffControls controls;
 
@@ -73,8 +78,9 @@ public class HuffMovement : MonoBehaviour
 
     // Start is called before the first frame update
     private void Awake()
-
     {
+        inHitStun = false;
+
         // intializes body, crcl colider, and animator as their components from Huff
         body = GetComponent<Rigidbody2D>();
         legsCrclCollider = GetComponent<CircleCollider2D>();
@@ -122,8 +128,10 @@ public class HuffMovement : MonoBehaviour
         {
             canTornadoJump = false;
             tornadoJumping = false;
+            inHitStun = false;
             animator.SetBool("MidAir", false);
             animator.SetBool("TornadoJumping", false);
+            animator.SetBool("Hit", false);
             tornadoJumpTimer = TORNADO_JUMP_MAX_TIME;
 
             if (holdingLeft && !holdingRight) // run left
@@ -165,30 +173,37 @@ public class HuffMovement : MonoBehaviour
             animator.SetBool("MidAir", true);
 
             // holding jump
-            if (holdingJump && isJumping && jumpHeldTimer < maxHoldTime)
-            {
-                body.velocity = new Vector2(body.velocity.x, body.velocity.y + jumpHeldForce * Time.deltaTime);
-                jumpHeldTimer += Time.deltaTime;
-            }
+            
 
-            if (holdingLeft && !holdingRight)
-                airStrafe(-1);
-            else if (holdingRight)
-                airStrafe(1);
-
-            // base form and in mid air
-            if (!hasVoltage())
+            if (!inHitStun)
             {
-                if (holdingJump && canTornadoJump) { // just staring to tornado jump
-                    tornadoJump();
+                if (holdingJump && isJumping && jumpHeldTimer < maxHoldTime)
+                {
+                    body.velocity = new Vector2(body.velocity.x, body.velocity.y + jumpHeldForce * Time.deltaTime);
+                    jumpHeldTimer += Time.deltaTime;
+                }
+
+                if (holdingLeft && !holdingRight)
+                    airStrafe(-1);
+                else if (holdingRight)
+                    airStrafe(1);
+
+                // base form and in mid air
+                if (!hasVoltage())
+                {
+                    if (holdingJump && canTornadoJump)
+                    { // just staring to tornado jump
+                        tornadoJump();
+                    }
+                }
+
+                if (isJumping && !holdingJump && !tornadoJumping && tornadoJumpTimer > 0)
+                {
+                    isJumping = false;
+                    canTornadoJump = true;
                 }
             }
-
-            if (isJumping && !holdingJump && !tornadoJumping && tornadoJumpTimer > 0)
-            {
-                isJumping = false;
-                canTornadoJump = true;
-            }
+            
 
             
         }
@@ -238,7 +253,6 @@ public class HuffMovement : MonoBehaviour
     // for testing, pressing up makes Huff take 1 hp of damage
     void up(InputAction.CallbackContext context)
     {
-        Debug.Log("in up, " + health);
         takeDamage();
     }
 
@@ -379,23 +393,48 @@ public class HuffMovement : MonoBehaviour
         return health;
     }
 
-    public int takeDamage()
+    public void takeDamage()
     {
-        if (health > 0)
-            health--;
-        return health;
+        if (!inHitStun)
+        {
+            if (health > 1)
+            {
+                health--;
+                getHit();
+            }
+            else
+            {
+                level.GetComponent<GeneralStage>().resetScene();
+                die();
+            }
+
+        }
+        
+        
     }
 
-    public int instantKill()
+    public void die()
     {
         health = 0;
-        return 0;
+        level.GetComponent<GeneralStage>().resetScene();
+    }
+
+    void getHit()
+    {
+        inHitStun = true;
+        animator.SetBool("Hit", true);
+
+        if (facingRight)
+            body.velocity = new Vector2(-2, 2);
+        else
+            body.velocity = new Vector2(2, 2);
     }
 
     public void respawn(float x, float y)
     {
         body.velocity = Vector3.zero;
         transform.position = new Vector3(x,y,0);
+        health = MAX_HEALTH;
     }
 
 

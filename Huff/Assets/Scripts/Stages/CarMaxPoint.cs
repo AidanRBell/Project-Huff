@@ -9,8 +9,7 @@ public class CarMaxPoint : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-
         if (collision.gameObject.layer == ENEMY_LAYER_NO)
-            collision.gameObject.GetComponent<Car>().idle();
+            collision.gameObject.GetComponent<Car>().respawnOffScreen();
     }
 }

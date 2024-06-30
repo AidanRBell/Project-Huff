@@ -53,7 +53,25 @@ public class GeneralStage : MonoBehaviour
 
     public void huffHitDeathPit()
     {
+        huffObject.GetComponent<HuffMovement>().die();
+    }
+
+
+    // this need to probably be changed to reset the scene
+    public void resetScene()
+    {
         huffObject.GetComponent<HuffMovement>().respawn(currRespawnPos.x, currRespawnPos.y);
+    }
+
+
+    public Vector2 getCurrentRespawnPoint()
+    {
+        return currRespawnPos;
+    }
+
+    public void setCurrentRespawnPoint(int index)
+    {
+        
     }
 
 
