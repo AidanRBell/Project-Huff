@@ -36,7 +36,7 @@ public class HuffMovement : MonoBehaviour
     [SerializeField] private float maxAirStrafeSpeed;
 
     // Jumping variables
-    private bool isJumping = false;
+    private bool isJumping = false, canJump = false;
     [SerializeField] private float jumpForce;
     [SerializeField] private float jumpDragFactor;
     [SerializeField] private float maxHoldTime;
@@ -59,10 +59,12 @@ public class HuffMovement : MonoBehaviour
     // hit variables
     private bool inHitStun = false;
 
+    // on ground variables
+    [SerializeField] private GameObject feet;
+
     private HuffControls controls;
 
     private Rigidbody2D body;
-    private CircleCollider2D legsCrclCollider;
     private Animator animator;
 
     [SerializeField] private LayerMask groundLayer, enemyLayer, hazardLayer, breakableLayer;
@@ -83,7 +85,6 @@ public class HuffMovement : MonoBehaviour
 
         // intializes body, crcl colider, and animator as their components from Huff
         body = GetComponent<Rigidbody2D>();
-        legsCrclCollider = GetComponent<CircleCollider2D>();
         animator = GetComponent<Animator>();
 
         // initialize the controls adapter
@@ -141,8 +142,9 @@ public class HuffMovement : MonoBehaviour
             else // not running
                 animator.SetBool("Running", false);
 
-            if (holdingJump) // initalizing ground jump
+            if (holdingJump && canJump) // initalizing ground jump
             {
+                canJump = false;
                 isJumping = true;
                 jumpHeldTimer = 0;
                 groundJump(jumpForce);
@@ -211,9 +213,17 @@ public class HuffMovement : MonoBehaviour
         if (holdingJump && jumpHeldTimer >= maxHoldTime)
             isJumping = false;
 
+        if (!holdingJump && onGround()) 
+            canJump = true;
 
-        if (!holdingCharge)
+
+        if (!holdingCharge) // should this be here
             keepSliding = true;
+
+        if (holdingShoot)
+            zapShot();
+
+
 
     }
 
@@ -275,7 +285,7 @@ public class HuffMovement : MonoBehaviour
 
     public bool onGround()
     {
-        return Physics2D.BoxCast(transform.position, boxSize, 0, -transform.up, castDistance, groundLayer);
+        return Physics2D.BoxCast(feet.transform.position, boxSize, 0, -transform.up, 0.1f, groundLayer);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -355,10 +365,30 @@ public class HuffMovement : MonoBehaviour
 
     // voltage moves
 
-    void zipShot(InputAction.CallbackContext context)
+    public void zapShot()
+    {
+        if (inHitStun) 
+            return;
+
+        animator.SetBool("ZapShot", true);
+        if (!onGround()) { // mid air 
+        
+        }
+        else if (holdingLeft || holdingRight) { // running
+
+        }
+        else { // idle
+
+        }
+
+    }
+
+    public void shootZapShot()
     {
 
     }
+
+
 
     void landingShot()
     {

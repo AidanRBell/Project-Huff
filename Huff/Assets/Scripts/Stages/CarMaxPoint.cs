@@ -4,12 +4,12 @@ using UnityEngine;
 
 public class CarMaxPoint : MonoBehaviour
 {
-    const int ENEMY_LAYER_NO = 7;
+    const int HAZARD_LAYER_NO = 8;
 
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.layer == ENEMY_LAYER_NO)
+        if (collision.gameObject.layer == HAZARD_LAYER_NO)
             collision.gameObject.GetComponent<Car>().respawnOffScreen();
     }
 }

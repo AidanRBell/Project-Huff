@@ -10,7 +10,9 @@ public class Car : MonoBehaviour
 
     [SerializeField] GameObject huff;
     [SerializeField] float speed;
-    [SerializeField] private int direction = 0;       
+    [SerializeField] private int direction = 0;
+    [SerializeField] private bool hasOffset = false;
+    [SerializeField] private Vector2 offset;
 
     private Rigidbody2D body;
 
@@ -20,17 +22,11 @@ public class Car : MonoBehaviour
 
     private void Start()
     {
-
-
         body = GetComponent<Rigidbody2D>();
-        respawnPoint = transform.position;
-
-        //if (direction == 0 || direction == 1)
-        //    body.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation;
-        //else if (direction == 2 || direction == 3)
-        //    body.constraints = RigidbodyConstraints2D.FreezePositionY | RigidbodyConstraints2D.FreezeRotation;
-        //else
-        //    Debug.Log(gameObject.name + " car is given no direction");
+        if (hasOffset)
+            return;
+        else
+            respawnPoint = new Vector2(transform.position.x + offset.x, transform.position.y + offset.y);
     }
 
     // Update is called once per frame
