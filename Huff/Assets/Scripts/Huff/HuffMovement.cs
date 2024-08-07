@@ -6,6 +6,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Transactions;
 using Unity.VisualScripting;
 using Unity.VisualScripting.ReorderableList;
@@ -29,7 +30,7 @@ public class HuffMovement : MonoBehaviour
     // running variables
     [SerializeField] private float groundSpeed;
     private bool holdingLeft = false, holdingRight = false, holdingUp = false, holdingDown = false;
-    private bool holdingJump = false, holdingShoot = false, holdingCharge = false, holdingGrip = false, holdingPath = false, holdingInteract = false;
+    private bool holdingJump = false, holdingCharge = false, holdingGrip = false, holdingPath = false, holdingInteract = false;
 
     // airdrifting variables
     [SerializeField] private float airStrafeFactor;
@@ -47,7 +48,7 @@ public class HuffMovement : MonoBehaviour
     private bool canTornadoJump = false;
     private bool tornadoJumping = false;
     [SerializeField] private float tornadoJumpingFactor;
-    const float TORNADO_JUMP_MAX_TIME = 1.5f;
+    const float TORNADO_JUMP_MAX_TIME = 1.0f;
     private float tornadoJumpTimer;
 
     // sliding variables
@@ -56,11 +57,19 @@ public class HuffMovement : MonoBehaviour
     public Transform slideAttackPoint;
     public float slideAttackRadius = 0.5f;
 
+    // zap shot variables
+    [SerializeField] private float zapShotSpeed;
+    [SerializeField] private GameObject[] zapShots;
+    [SerializeField] private GameObject zapShotSpawn;
+    private bool canShoot;
+
     // hit variables
     private bool inHitStun = false;
 
     // on ground variables
     [SerializeField] private GameObject feet;
+
+
 
     private HuffControls controls;
 
@@ -82,13 +91,21 @@ public class HuffMovement : MonoBehaviour
     private void Awake()
     {
         inHitStun = false;
+        canShoot = true;
 
         // intializes body, crcl colider, and animator as their components from Huff
         body = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
 
+        // set all zap shots to false
+        foreach (GameObject zapShot in zapShots)
+            zapShot.SetActive(false);
+
+
         // initialize the controls adapter
         controls = new HuffControls();
+
+        
 
         controls.Huff.Left.performed += ctx => holdingLeft = true;
         controls.Huff.Left.canceled += ctx => holdingLeft = false;
@@ -105,8 +122,7 @@ public class HuffMovement : MonoBehaviour
         controls.Huff.Jump.performed += ctx => holdingJump = true;
         controls.Huff.Jump.canceled += ctx => holdingJump = false;
 
-        controls.Huff.Shoot.performed += ctx => holdingShoot = true;
-        controls.Huff.Shoot.canceled += ctx => holdingShoot = false;
+        controls.Huff.Shoot.performed += ctx => zapShot();
 
         controls.Huff.Charge.performed += ctx => holdingCharge = true;
         controls.Huff.Charge.canceled += ctx => holdingCharge = false;
@@ -125,6 +141,7 @@ public class HuffMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
         if (onGround()) // if player is on the ground
         {
             canTornadoJump = false;
@@ -150,12 +167,14 @@ public class HuffMovement : MonoBehaviour
                 groundJump(jumpForce);
             }
 
-            if (!hasVoltage() && holdingCharge && !isSliding && keepSliding) { 
+            if (!hasVoltage() && holdingCharge && !isSliding && keepSliding)
+            {
                 isSliding = true;
                 animator.SetBool("Sliding", true);
                 slide();
             }
-            else if (!hasVoltage() && holdingCharge && isSliding && keepSliding) {
+            else if (!hasVoltage() && holdingCharge && isSliding && keepSliding)
+            {
                 slide();
             }
             else
@@ -175,7 +194,7 @@ public class HuffMovement : MonoBehaviour
             animator.SetBool("MidAir", true);
 
             // holding jump
-            
+
 
             if (!inHitStun)
             {
@@ -204,26 +223,56 @@ public class HuffMovement : MonoBehaviour
                     isJumping = false;
                     canTornadoJump = true;
                 }
-            }
-            
 
-            
+                if (tornadoJumping && !holdingJump)
+                    canTornadoJump = false;
+            }
+
+
+
         }
 
         if (holdingJump && jumpHeldTimer >= maxHoldTime)
             isJumping = false;
 
-        if (!holdingJump && onGround()) 
+        if (!holdingJump && onGround())
             canJump = true;
 
 
         if (!holdingCharge) // should this be here
             keepSliding = true;
 
-        if (holdingShoot)
-            zapShot();
 
+        if (getCurrentAnimation() == "ZapShot_Idle")
+        {
+            if (holdingLeft || holdingRight)
+                changeAnimation("ZapShot_Run");
+            else if (!onGround())
+                changeAnimation("ZapShot_MidAir");
+        }
+        else if (getCurrentAnimation() == "ZapShot_Run")
+        {
+            if (!(holdingLeft || holdingRight))
+                changeAnimation("ZapShot_Idle");
+            else if (!onGround())
+                changeAnimation("ZapShot_MidAir");
+        }
+        else if (getCurrentAnimation() == "ZapShot_MidAir")
+        {
+            if (onGround())
+            {
+                if (holdingLeft || holdingRight)
+                    changeAnimation("ZapShot_Run");
+                else
+                    changeAnimation("ZapShot_Idle");
+            }
+        }
+        else
+        {
+            canShoot = true;
+        }
 
+        //Debug.Log(canShoot);
 
     }
 
@@ -274,7 +323,7 @@ public class HuffMovement : MonoBehaviour
 
     void turnAround()
     {
-        if (facingRight && holdingLeft || !facingRight && holdingRight)
+        if ((facingRight && holdingLeft && !holdingRight) || (!facingRight && holdingRight))
         {
             facingRight = !facingRight;
             transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, 1);
@@ -322,7 +371,7 @@ public class HuffMovement : MonoBehaviour
         }
         if (tornadoJumpTimer > 0)
         {
-            
+
             tornadoJumpTimer -= Time.deltaTime;
             body.velocity = new Vector2(body.velocity.x, tornadoJumpingFactor);
         }
@@ -367,25 +416,43 @@ public class HuffMovement : MonoBehaviour
 
     public void zapShot()
     {
-        if (inHitStun) 
+        if (!canShoot || inHitStun || tornadoJumping)
             return;
 
-        animator.SetBool("ZapShot", true);
-        if (!onGround()) { // mid air 
-        
-        }
-        else if (holdingLeft || holdingRight) { // running
-
-        }
-        else { // idle
-
-        }
-
+        animator.SetTrigger("ZapShot");
+        canShoot = false;
     }
 
     public void shootZapShot()
     {
+        if (!canShoot) return;
 
+        int zapIndex = -1;
+        for (int i = 0; i < zapShots.Length; i++)
+            if (!zapShots[i].active)
+            { zapIndex = i; break; }
+        if (zapIndex == -1)
+            return;
+
+        zapShots[zapIndex].SetActive(true);
+
+        if (facingRight)
+            zapShots[zapIndex].GetComponent<ZapShot>().shoot(zapShotSpeed, zapShotSpawn.transform.position);
+        else
+            zapShots[zapIndex].GetComponent<ZapShot>().shoot(-zapShotSpeed, zapShotSpawn.transform.position);
+
+    }
+
+    public void disableZapShot(int index)
+    {
+        if (index > 3 || index < 0) return;
+
+        zapShots[index].SetActive(false);
+    }
+
+    public void canShootAgain()
+    {
+        canShoot = true;
     }
 
 
@@ -439,8 +506,8 @@ public class HuffMovement : MonoBehaviour
             }
 
         }
-        
-        
+
+
     }
 
     public void die()
@@ -463,7 +530,7 @@ public class HuffMovement : MonoBehaviour
     public void respawn(float x, float y)
     {
         body.velocity = Vector3.zero;
-        transform.position = new Vector3(x,y,0);
+        transform.position = new Vector3(x, y, 0);
         health = MAX_HEALTH;
     }
 
@@ -483,6 +550,32 @@ public class HuffMovement : MonoBehaviour
         animator.SetBool(name, value);
     }
 
+
+    string getCurrentAnimation()
+    {
+        int clipNameHash = animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+
+        foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+            if (Animator.StringToHash(clip.name) == clipNameHash)
+                return clip.name;
+
+        return "Null";
+
+    }
+
+    void changeAnimation(string newState)
+    {
+        AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
+        float currentNormalizedTime = currentState.normalizedTime % 1;
+
+        animator.Play(newState, 0, currentNormalizedTime);
+    }
+
+
+    public void getState()
+    {
+
+    }
 
 
 }

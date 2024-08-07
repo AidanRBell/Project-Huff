@@ -5,7 +5,16 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 2cda990e2423bbf4892e6590ba056729
+  - enabled: 1
+    path: Assets/Scenes/MainMenu.unity
+    guid: 17b7c726349de2f48aa7480aa020b92c
+  - enabled: 1
+    path: Assets/Scenes/WorldMap.unity
+    guid: 1ab0fa3a81d15034e8f66406c04bec34
+  - enabled: 1
+    path: Assets/Scenes/lvl1_RODEO.unity
+    guid: 35e68fbb0786768498a797dec9be229e
   m_configObjects: {}
