@@ -1,6 +1,6 @@
 # Project Huff
 
-## Engine: Unity
+Engine: Unity
 
 ## Description
 Project Huff is a 2D platforming game I have been developing independently. It's a passion project I have been creating in my free time since May 2024.
