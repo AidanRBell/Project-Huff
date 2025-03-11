@@ -105,6 +105,8 @@ public class HuffMovement : MonoBehaviour
         // initialize the controls adapter
         controls = new HuffControls();
 
+        controls.Huff.Enable();
+        controls.Menu.Disable();
         
 
         controls.Huff.Left.performed += ctx => holdingLeft = true;
